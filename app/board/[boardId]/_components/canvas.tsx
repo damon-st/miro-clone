@@ -1,6 +1,12 @@
 "use client";
 import { nanoid } from "nanoid";
-import React, { useCallback, useEffect, useMemo, useState } from "react";
+import React, {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import { Info } from "./info";
 import { Participans } from "./participans";
 import { Toolbar } from "./toolbar";
@@ -42,11 +48,17 @@ import { useDisableScrollBounce } from "@/hooks/use-disable-scroll-bounce";
 import { useDeleteLayers } from "@/hooks/use-delete-layers";
 import { toast } from "sonner";
 import { useDebounceValue } from "usehooks-ts";
+import { toPng } from "html-to-image";
+import { DownloadCloud, ImageIcon } from "lucide-react";
+import { Hint } from "@/components/hint";
+
 const MAX_LAYERS = 100;
 type Props = {
   boardId: string;
 };
 export const Canvas = ({ boardId }: Props) => {
+  const svgRef = useRef<any | null>(null);
+
   const layerIds = useStorage((root) => root.layerIds);
   const pencilDraft = useSelf((me) => me.presence.pencilDraft);
   const [camera, setCamera] = useState<Camera>({ x: 0, y: 0 });
@@ -504,17 +516,44 @@ export const Canvas = ({ boardId }: Props) => {
   const handleMouseUp = () => {
     setIsDragging(false);
   };
+
+  const handleExportClick = () => {
+    if (svgRef.current) {
+      toPng(svgRef.current)
+        .then((dataUrl) => {
+          const link = document.createElement("a");
+          link.href = dataUrl;
+          link.download = "exported-image.png";
+          link.click();
+        })
+        .catch((error) => {
+          console.error("Error exporting image:", error);
+        });
+    }
+  };
   return (
     <main
       id="svg-container"
       className="size-full relative bg-neutral-100 touch-none"
     >
-      <div
-        onClick={() => setScale(1.0)}
-        className=" cursor-pointer absolute bottom-2 right-2 bg-white p-2 shadow-sm"
-      >
-        <p>Zoom | {scale.toFixed(2)}</p>
+      <div className="absolute bottom-2 flex flex-col space-y-4 right-2 items-end">
+        <Hint label="Save to image ">
+          <div
+            onClick={handleExportClick}
+            className=" cursor-pointer w-fit  bg-white p-2 shadow-sm flex  flex-col items-center"
+          >
+            <DownloadCloud size={30} className="text-blue-500" />
+            <ImageIcon size={30} className="text-blue-500" />
+          </div>
+        </Hint>
+        <div
+          onClick={() => setScale(1.0)}
+          className=" cursor-pointer  bg-white p-2 shadow-sm"
+        >
+          <p>Zoom | {scale.toFixed(2)}</p>
+        </div>
       </div>
+
       <Info boardId={boardId} />
       <Participans onUserCamera={onUserCamera} />
       <Toolbar
@@ -531,6 +570,7 @@ export const Canvas = ({ boardId }: Props) => {
         setLastUsedColor={setLastUsedColor}
       />
       <svg
+        ref={svgRef}
         id="my-svg"
         onWheel={onWheel}
         className="h-[100vh] w-[100vw]"
