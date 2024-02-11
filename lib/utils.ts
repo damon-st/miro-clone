@@ -157,3 +157,19 @@ export function getSvgPathFromStroke(stroke: number[][]) {
 
   return d.join(" ");
 }
+export function hexToRgb(hex: string): Color {
+  // Eliminar el símbolo '#' si está presente
+  hex = hex.replace(/^#/, "");
+
+  // Obtener los componentes de color
+  const bigint = parseInt(hex, 16);
+  const r = (bigint >> 16) & 255;
+  const g = (bigint >> 8) & 255;
+  const b = bigint & 255;
+
+  return {
+    r,
+    g,
+    b,
+  };
+}

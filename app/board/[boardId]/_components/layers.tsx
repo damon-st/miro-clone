@@ -55,7 +55,7 @@ export const Layers = ({ onUserCamera, onSelectLayer }: Props) => {
                 <span>{label}</span>
                 <Icon />
               </div>
-              <Hint label="Delete Element">
+              <Hint side="left" sideOffset={18} label="Delete Element">
                 <div
                   onClick={(e) => deleteElement(e, data[0])}
                   className="flex items-center justify-center"

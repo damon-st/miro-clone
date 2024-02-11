@@ -62,6 +62,7 @@ export const Text = ({
         style={{
           color: fill ? colorToCss(fill) : "#000",
           fontSize: calculateFontSize(width, height),
+          overflowWrap: "anywhere",
         }}
       />
     </foreignObject>

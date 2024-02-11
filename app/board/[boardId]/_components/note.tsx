@@ -58,12 +58,13 @@ export const Note = ({
         html={value ?? "Text"}
         onChange={handleContentChange}
         className={cn(
-          "size-full flex items-center justify-center text-center outline-none",
+          "size-full flex items-center justify-center text-center outline-none p-1",
           font.className
         )}
         style={{
           color: fill ? getContrastingTextColor(fill) : "#000",
           fontSize: calculateFontSize(width, height),
+          overflowWrap: "anywhere",
         }}
       />
     </foreignObject>

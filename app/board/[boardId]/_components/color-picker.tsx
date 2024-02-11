@@ -1,7 +1,10 @@
 "use client";
 
-import { colorToCss } from "@/lib/utils";
+import { ColorPickerPopover } from "@/components/color-picker";
+import { Hint } from "@/components/hint";
+import { colorToCss, hexToRgb } from "@/lib/utils";
 import { Color } from "@/types/canvas";
+import { Palette } from "lucide-react";
 
 interface ColorPickerPrpps {
   onChange: (color: Color) => void;
@@ -18,6 +21,16 @@ export const ColorPicker = ({ onChange }: ColorPickerPrpps) => {
       <ColorButton color={{ r: 252, g: 142, b: 42 }} onClick={onChange} />
       <ColorButton color={{ r: 0, g: 0, b: 0 }} onClick={onChange} />
       <ColorButton color={{ r: 255, g: 255, b: 255 }} onClick={onChange} />
+      <ColorPickerPopover
+        onChange={(s) => {
+          console.log(s);
+          onChange(hexToRgb(s));
+        }}
+      >
+        <div className="size-8 rounded-md bg-blue-100 flex items-center justify-center cursor-pointer">
+          <Palette className="text-blue-600" />
+        </div>
+      </ColorPickerPopover>
     </div>
   );
 };
