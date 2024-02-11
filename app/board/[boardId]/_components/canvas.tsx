@@ -51,6 +51,8 @@ import { useDebounceValue } from "usehooks-ts";
 import { toPng } from "html-to-image";
 import { DownloadCloud, ImageIcon } from "lucide-react";
 import { Hint } from "@/components/hint";
+import { Layers } from "./layers";
+import MiniMap from "./mini-map";
 
 const MAX_LAYERS = 100;
 type Props = {
@@ -58,7 +60,7 @@ type Props = {
 };
 export const Canvas = ({ boardId }: Props) => {
   const svgRef = useRef<any | null>(null);
-
+  const contentMainRef = useRef<HTMLElement | null>(null);
   const layerIds = useStorage((root) => root.layerIds);
   const pencilDraft = useSelf((me) => me.presence.pencilDraft);
   const [camera, setCamera] = useState<Camera>({ x: 0, y: 0 });
@@ -318,7 +320,7 @@ export const Canvas = ({ boardId }: Props) => {
   );
 
   const onPointerLeave = useMutation(({ setMyPresence }) => {
-    setMyPresence({ cursor: null });
+    // setMyPresence({ cursor: null });
   }, []);
 
   const onPointerDown = useCallback(
@@ -389,6 +391,23 @@ export const Canvas = ({ boardId }: Props) => {
     },
     [setCanvasState, camera, history, canvasState.mode]
   );
+  const onSelectLayer = useMutation(
+    ({ self, setMyPresence }, point: Point, layerId: string) => {
+      if (
+        canvasState.mode === CanvasMode.Pencil ||
+        canvasState.mode === CanvasMode.Inserting
+      ) {
+        return;
+      }
+      history.pause();
+      if (!self.presence.selection.includes(layerId)) {
+        setMyPresence({ selection: [layerId] }, { addToHistory: true });
+      }
+      onUserCamera({ ...point });
+      // setCanvasState({ mode: CanvasMode.Translating, current: point });
+    },
+    [setCanvasState, camera, history, canvasState.mode]
+  );
 
   const layerIdsToColorSelection = useMemo(() => {
     const layerIdsTocolorSelection: Record<string, string> = {};
@@ -418,6 +437,11 @@ export const Canvas = ({ boardId }: Props) => {
             }
           }
           break;
+        case "Escape":
+          unSelectLayers();
+          setCanvasState({ mode: CanvasMode.None });
+
+          break;
 
         default:
           break;
@@ -430,9 +454,11 @@ export const Canvas = ({ boardId }: Props) => {
   }, [deleteLayers, history]);
 
   const onUserCamera = (value: Camera) => {
+    const bounds = contentMainRef.current?.getBoundingClientRect();
+    if (!bounds) return;
     setCamera({
-      x: Math.min(value.x, whelValue.x) + 100,
-      y: Math.min(value.y, whelValue.y) + 1000,
+      x: (bounds.x - value.x) / 2,
+      y: (bounds.y - value.y) / 2,
     });
   };
   const [startMouseX, setStartMouseX] = useState(0);
@@ -474,8 +500,23 @@ export const Canvas = ({ boardId }: Props) => {
     // Agrega un event listener para el evento de rueda del mouse
     svgContainer.addEventListener("wheel", handleWheel);
 
+    const handleResize = () => {
+      // const vw = window.innerWidth * 1.1; // 110% del ancho de la ventana
+      // const vh = window.innerHeight * 1.1; // 110% del alto de la ventana
+      // const viewBoxValue = `0 0 ${vw} ${vh}`;
+      // svgElement.setAttribute("viewBox", viewBoxValue);
+    };
+
+    // Agregar un escucha de eventos de cambio de tamaño de ventana
+    window.addEventListener("resize", handleResize);
+
+    // Establecer el viewBox inicial
+    handleResize();
+
+    // Limpiar el escucha de eventos cuando el componente se desmonta
     return () => {
       svgContainer.removeEventListener("wheel", handleWheel);
+      window.removeEventListener("resize", handleResize);
     };
   }, [setScale]);
 
@@ -497,7 +538,24 @@ export const Canvas = ({ boardId }: Props) => {
       setStartTranslateX(newTranslateX);
       setStartTranslateY(newTranslateY);
     }
+    onRestringCamera(event);
   };
+
+  const onRestringCamera = (event: React.MouseEvent) => {
+    // // Actualiza la posición de la cámara al arrastrar
+    // setCamera((prevPosition) => ({
+    //   x: prevPosition.x - event.movementX,
+    //   y: prevPosition.y - event.movementY,
+    // }));
+    // Asegúrate de que la posición de la cámara se mantenga dentro de los límites del viewBox
+    // const vw = window.innerWidth * 1.2;
+    // const vh = window.innerHeight * 1.2;
+    // setCamera((prevPosition) => ({
+    //   x: Math.min(Math.max(prevPosition.x, 0), vw - window.innerWidth),
+    //   y: Math.min(Math.max(prevPosition.y, 0), vh - window.innerHeight),
+    // }));
+  };
+
   const handleMouseDown = (event: React.MouseEvent) => {
     // Verifica si el clic fue con el botón de la rueda del ratón (botón central)
     if (event.button !== 1) {
@@ -513,8 +571,9 @@ export const Canvas = ({ boardId }: Props) => {
   const hadleMouseLeave = () => {
     setIsDragging(false);
   };
-  const handleMouseUp = () => {
+  const handleMouseUp = (e: React.MouseEvent) => {
     setIsDragging(false);
+    onRestringCamera(e);
   };
 
   const handleExportClick = () => {
@@ -533,10 +592,12 @@ export const Canvas = ({ boardId }: Props) => {
   };
   return (
     <main
+      ref={contentMainRef}
       id="svg-container"
       className="size-full relative bg-neutral-100 touch-none"
     >
       <div className="absolute bottom-2 flex flex-col space-y-4 right-2 items-end">
+        <Layers onUserCamera={onUserCamera} onSelectLayer={onSelectLayer} />
         <Hint label="Save to image ">
           <div
             onClick={handleExportClick}
@@ -552,6 +613,7 @@ export const Canvas = ({ boardId }: Props) => {
         >
           <p>Zoom | {scale.toFixed(2)}</p>
         </div>
+        <MiniMap camera={camera} svgRef={svgRef.current} />
       </div>
 
       <Info boardId={boardId} />

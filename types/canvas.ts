@@ -1,3 +1,16 @@
+import {
+  ArrowRight,
+  Circle,
+  FileQuestionIcon,
+  LucideIcon,
+  Pencil,
+  Square,
+  StickyNote,
+  Triangle,
+  Type,
+  icons,
+} from "lucide-react";
+
 export type Color = {
   r: number;
   g: number;
@@ -17,6 +30,30 @@ export enum LayerType {
   Note,
   Triangle,
   Arrow,
+}
+
+export function getLayerName(type: LayerType): {
+  label: string;
+  icon: LucideIcon;
+} {
+  switch (type) {
+    case LayerType.Rectangle:
+      return { label: "Ellipse", icon: Square };
+    case LayerType.Ellipse:
+      return { label: "Ellipse", icon: Circle };
+    case LayerType.Path:
+      return { label: "Path", icon: Pencil };
+    case LayerType.Text:
+      return { label: "Text", icon: Type };
+    case LayerType.Note:
+      return { label: "Note", icon: StickyNote };
+    case LayerType.Triangle:
+      return { label: "Triangle", icon: Triangle };
+    case LayerType.Arrow:
+      return { label: "Arrow", icon: ArrowRight };
+    default:
+      return { label: "Unknow", icon: FileQuestionIcon };
+  }
 }
 
 export type TypeLayers = {
